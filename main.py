@@ -68,16 +68,12 @@ def user_input_mode():
     pattern = input_matrix(3)
     print("\n패턴 A 입력")
 
-    start_time = time.perf_counter()
-        
     score_a = mac_operation(pattern, filter_a)
     score_b = mac_operation(pattern, filter_b)
+        
+    score_a = measure_mac_time(pattern, filter_a)
+    score_b = measure_mac_time(pattern, filter_b)
 
-    end_time = time.perf_counter()
-
-    elapsed_time = (end_time - start_time) * 1000
-
-    print("MAC 연산 시간:", elapsed_time, "ms")
         
     result = classify_pattern(score_a, score_b)
         
@@ -85,7 +81,8 @@ def user_input_mode():
     print("필터 A 점수:", score_a)
     print("필터 B 점수:", score_b)
     print("판정 결과:", result)
-    print("MAC 연산 시간:", elapsed_time, "ms")
+    print("필터 A 평균 연산 시간:", score_a, "ms")
+    print("필터 B 평균 연산 시간:", score_b, "ms")
 
 
 #정사각형 행렬 입력받기
@@ -133,19 +130,23 @@ def classify_pattern(score_a, score_b):
         return "B"
 
 
+#평균시간측정
+def measure_mac_time(pattern, filter, repeat=10):
+    start_time = time.perf_counter()
+
+    for _ in range(repeat):
+        mac_operation(pattern, filter)
+
+    end_time = time.perf_counter()
+
+    elapsed_time = (end_time - start_time) * 1000
+
+    average_time = elapsed_time / repeat
+
+    return average_time
+
+
+
+
 if __name__=="__main__":
     main()
-# print("필터 A 입력")
-# filter_a = input_matrix(3)
-
-# print("필터 B 입력")
-# filter_b = input_matrix(3)
-
-# print("패턴 입력")
-# pattern = input_matrix(3)
-
-# score_a = mac_operation(pattern, filter_a)
-# score_b = mac_operation(pattern, filter_b)
-
-# print("필터 A 점수:", score_a)
-# print("필터 B 점수:", score_b)
