@@ -1,4 +1,5 @@
 import time
+import json
 
 #메뉴
 def show_menu():
@@ -22,6 +23,11 @@ def main():
 
         elif choice == "2":
             print("JSON 분석 모드를 실행합니다.")
+
+            data = load_json_data()
+
+            if data is not None:
+                analyze_json_data(data)
 
         elif choice == "0":
             print("프로그램을 종료합니다.")
@@ -146,6 +152,65 @@ def measure_mac_time(pattern, filter, repeat=10):
     return average_time
 
 
+#json파일 불러오기
+def load_json_data():
+    try:
+        with open("data.json", "r", encoding="utf-8") as file:
+            data = json.load(file)
+
+        print("JSON 파일을 성공적으로 읽었습니다.")
+
+        return data
+
+    except FileNotFoundError:
+        print("data.json 파일을 찾을 수 없습니다.")
+        return None
+
+    except json.JSONDecodeError:
+        print("JSON 파일 형식이 잘못되었습니다.")
+        return None
+
+
+
+
+#행렬사이즈 추출
+def extract_size(pattern_key):
+    parts = pattern_key.split("_")
+
+    size = int(parts[1])
+
+    return size
+
+
+#json분석
+def analyze_json_data(data):
+    filters = data["filters"]
+    patterns = data["patterns"]
+
+    for pattern_key, pattern_data in patterns.items():
+
+        #패턴이름에서 크기 추출
+        size = extract_size(pattern_key)
+
+        #크기에 맞는 필터 선택
+        filter_key = f"size_{size}"
+        selected_filter = filters[filter_key]
+
+        #Cross와 X 핕터 가져오기
+        cross_filter = selected_filter["cross"]
+        x_filter = selected_filter["x"]
+
+        #패턴 가져오기
+        pattern = pattern_data["input"]
+
+        #MAC 연산
+        cross_score = mac_operation(pattern, cross_filter)
+        x_score = mac_operation(pattern, x_filter)
+
+        print("\n===== 분석 결과 =====")
+        print("패턴 이름:", pattern_key)
+        print("Cross 점수:", cross_score)
+        print("X 점수:", x_score)
 
 
 if __name__=="__main__":
