@@ -291,6 +291,54 @@ def analyze_json_data(data):
             25: []
         }
 
+    # print("\n===== [1] 필터 로드 =====")
+
+    # for filter_key, filter_data in filters.items():
+
+    #     # 지원하는 필터 크기인지 확인
+    #     if filter_key not in ["size_5", "size_13", "size_25"]:
+    #         print(f"{filter_key}: 지원하지 않는 필터입니다.")
+    #         continue
+
+    #     size = int(filter_key.split("_")[1])
+
+    #     # 필터 데이터가 딕셔너리인지 확인
+    #     if not isinstance(filter_data, dict):
+    #         print(f"{filter_key}: 필터 데이터 형식 오류")
+    #         continue
+
+    #     # Cross와 X 항목이 모두 있는지 확인
+    #     if "cross" not in filter_data or "x" not in filter_data:
+    #         print(f"{filter_key}: Cross 또는 X 필터가 없습니다.")
+    #         continue
+
+    #     cross_filter = filter_data["cross"]
+    #     x_filter = filter_data["x"]
+
+    #     # 두 필터의 행렬 자료형 및 내부 값 검사
+    #     cross_valid, cross_error = validate_matrix_type(cross_filter)
+    #     x_valid, x_error = validate_matrix_type(x_filter)
+
+    #     if not cross_valid:
+    #         print(f"{filter_key} Cross 필터 오류: {cross_error}")
+    #         continue
+
+    #     if not x_valid:
+    #         print(f"{filter_key} X 필터 오류: {x_error}")
+    #         continue
+
+    #     # 두 필터의 행렬 크기 검사
+    #     if not validate_matrix(cross_filter, size):
+    #         print(f"{filter_key}: Cross 필터 크기 오류")
+    #         continue
+
+    #     if not validate_matrix(x_filter, size):
+    #         print(f"{filter_key}: X 필터 크기 오류")
+    #         continue
+
+    #     print(f"{filter_key} 필터 로드 완료 (Cross, X)")
+
+
     for pattern_key, pattern_data in patterns.items():
         
         
