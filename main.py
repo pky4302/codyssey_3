@@ -35,7 +35,7 @@ def main():
                 test_data["patterns"]["size_5_2"]["input"][0][0] = "hello"
                 
                 analyze_json_data(test_data)
-                performance_analysis()
+                
 
         elif choice == "0":
             print("프로그램을 종료합니다.")
@@ -85,8 +85,8 @@ def user_input_mode():
     score_a = mac_operation(pattern, filter_a)
     score_b = mac_operation(pattern, filter_b)
         
-    average_a = measure_mac_time(pattern, filter_a)
-    average_b = measure_mac_time(pattern, filter_b)
+    # average_a = measure_mac_time(pattern, filter_a)
+    # average_b = measure_mac_time(pattern, filter_b)
 
         
     result = classify_pattern(score_a, score_b)
@@ -95,10 +95,11 @@ def user_input_mode():
     print("필터 A 점수:", score_a)
     print("필터 B 점수:", score_b)
     print("판정 결과:", result)
-    print("필터 A 평균 연산 시간:", average_a, "ms")
-    print("필터 B 평균 연산 시간:", average_b, "ms")
+    # print("필터 A 평균 연산 시간:", average_a, "ms")
+    # print("필터 B 평균 연산 시간:", average_b, "ms")
 
-    performance_analysis()
+    performance_analysis(pattern, filter_a, "필터A")
+    performance_analysis(pattern, filter_b, "필터B")
 
 
 #정사각형 행렬 입력받기
@@ -126,7 +127,7 @@ def input_matrix(size):
 #행렬크기검사
 def validate_matrix(matrix, size):
     if not isinstance(matrix, list):
-        return
+        return False
 
     if len(matrix) != size:
         return False
@@ -261,10 +262,49 @@ def analyze_json_data(data):
     fail_patterns = []
     fail_reasons = []
 
+    if not isinstance(data, dict):
+        print("JSON 최상위 데이터가 객체 형식이 아닙니다.")
+        return
+
+    if "filters" not in data:
+        print("JSON에 filters 항목이 없습니다.")
+        return
+
+    if "patterns" not in data:
+        print("JSON에 patterns 항목이 없습니다.")
+        return
+
+    if not isinstance(data["filters"], dict):
+        print("filters 항목이 객체 형식이 아닙니다.")
+        return
+
+    if not isinstance(data["patterns"], dict):
+        print("patterns 항목이 객체 형식이 아닙니다.")
+        return
+
     filters = data["filters"]
     patterns = data["patterns"]
 
+    performance_results = {
+            5: [],
+            13: [],
+            25: []
+        }
+
     for pattern_key, pattern_data in patterns.items():
+        
+        
+
+        if not isinstance(pattern_data, dict):
+            print(f"\n[FAIL] {pattern_key}")
+            print("오류 위치: patterns ->", pattern_key)
+            print("오류 내용: 패턴 데이터가 객체 형식이 아닙니다.")
+
+            fail_count += 1
+            fail_patterns.append(pattern_key)
+            fail_reasons.append("패턴 데이터 자료형 오류")
+
+            continue
 
         try:
             #패턴이름에서 크기 추출 (ex 5)
@@ -282,6 +322,7 @@ def analyze_json_data(data):
         #크기에 맞는 필터 선택
         filter_key = f"size_{size}"
 
+        
         if filter_key not in filters:
             print(f"\n{pattern_key}: {filter_key} 필터가 없습니다.")
 
@@ -292,6 +333,17 @@ def analyze_json_data(data):
             continue
 
         selected_filter = filters[filter_key]
+
+        if not isinstance(selected_filter, dict):
+            print(f"\n[FAIL] {pattern_key}")
+            print("오류 위치: filters ->", filter_key)
+            print("오류 내용: 필터 데이터가 객체 형식이 아닙니다.")
+
+            fail_count += 1
+            fail_patterns.append(pattern_key)
+            fail_reasons.append("필터 데이터 자료형 오류")
+
+            continue
 
 
         if "cross" not in selected_filter or "x" not in selected_filter:
@@ -362,7 +414,7 @@ def analyze_json_data(data):
         
             continue
 
-        is_valid, error_message = validate_matrix_type(cross_filter)
+        is_valid, error_message = validate_matrix_type(x_filter)
         
         if not is_valid:
             print(f"\n[FAIL] {pattern_key}")
@@ -417,6 +469,15 @@ def analyze_json_data(data):
         cross_score = mac_operation(pattern, cross_filter)
         x_score = mac_operation(pattern, x_filter)
 
+        #성능 측정
+        cross_time = performance_analysis(pattern, cross_filter, "Cross 필터")
+        x_time = performance_analysis(pattern, x_filter, "X 필터")
+
+
+        #성능측정 표 데이터 누적
+        performance_results[size].extend([cross_time, x_time])
+
+
         result = classify_pattern(cross_score, x_score)
 
         if result == "A":
@@ -425,6 +486,17 @@ def analyze_json_data(data):
             result = "X"
 
         expected = pattern_data["expected"]
+
+        if expected not in["+", "x"]:
+            print(f"\n[FAIL] {pattern_key}")
+            print("오류 위치: patterns ->", pattern_key, "-> expected")
+            print("오류 내용: 지원하지 않는 정답 값입니다.")
+
+            fail_count += 1
+            fail_patterns.append(pattern_key)
+            fail_reasons.append("expected 값 오류")
+
+            continue
 
         if expected == "+":
             expected = "Cross" #라벨 정규화
@@ -438,7 +510,11 @@ def analyze_json_data(data):
             status = "FAIL"
             fail_count += 1
             fail_patterns.append(pattern_key)
-            fail_reasons.append("MAC 판정 결과와 정답 불일치")
+
+            if result == "UNDECIDED":
+                fail_reasons.append("MAC 점수 동점 또는 허용 오차 이내")
+            else:
+                fail_reasons.append("MAC 판정 결과와 정답 불일치")
         
 
         print("\n===== 분석 결과 =====")
@@ -447,8 +523,23 @@ def analyze_json_data(data):
         print("X 점수:", x_score)
         print("판정결과:", result)
         print("정답:", expected)
-        print("원본 정답:", repr(pattern_data["expected"]))
+        # print("원본 정답:", repr(pattern_data["expected"]))
         print("테스트 결과:", status)
+
+
+    print("\n===== 행렬 크기별 성능 분석 =====")
+    print("행렬 크기 | 평균 연산 시간(ms) | MAC 연산 수")
+
+    for size, times in performance_results.items():
+        if times:
+            average_time = sum(times) / len(times)
+            operation_count = size * size
+
+            print(
+                f"{size}x{size} | "
+                f"{average_time:.6f}ms | "
+                f"{operation_count}"
+            )
 
     #전체분석결과
     print("\n===== 전체 분석 결과 =====")
@@ -467,25 +558,19 @@ def analyze_json_data(data):
 
 
 #성능테스트  
-def performance_analysis():
-    sizes = [3, 5, 13, 25]
+def performance_analysis(pattern, filter_matrix, filter_name):
+    size = len(pattern)
 
-    print("\n===== 성능 분석 =====")
-    print("행렬 크기 | 평균 연산 시간(ms) | MAC 연산 수")
+    print(f"\n===== 성능 분석 ({filter_name}) =====")
 
-    for size in sizes:
-        pattern = create_test_matrix(size)
-        filter_matrix = create_test_matrix(size)
+    average_time = measure_mac_time(pattern, filter_matrix)
+    operation_count = size * size
 
-        average_time = measure_mac_time(pattern, filter_matrix)
+    print(f"행렬 크기: {size}x{size}")
+    print(f"평균 연산 시간: {average_time:.6f}ms")
+    print(f"MAC 연산 수: {operation_count}")
 
-        operation_count = size * size
-
-        print(
-            f"{size}x{size} | "
-            f"{average_time:.6f}ms | "
-            f"{operation_count}"
-        )
+    return average_time
 
 
 
